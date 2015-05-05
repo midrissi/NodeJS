@@ -78,7 +78,7 @@ Server.prototype.start = function(config) {
 		c.pipe(c);
 	});
 	
-	server.listen(this.config, function() {
+	server.listen(this.config.port, this.config.host, function() {
 		this.started = true;
 		console.log('Server listening!')
 	});

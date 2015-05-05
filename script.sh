@@ -1,2 +1,2 @@
 #!/bin/bash
-ls -al $1
+unoconv -o output -f pdf $1

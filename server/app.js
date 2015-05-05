@@ -15,7 +15,7 @@ var config = global.config = require('./config/environment');
 mongoose.connect(config.mongo.uri, config.mongo.options);
 
 // Setup server
-var app = express();
+var app = global.app = express();
 var server = require('http').createServer(app);
 require('./config/express')(app);
 require('./routes')(app);

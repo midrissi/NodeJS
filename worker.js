@@ -43,10 +43,30 @@ client.on('data', function(data) {
 				readstream.pipe(fs_write_stream);
 				fs_write_stream.on('close', function() {
 					exec('./script.sh "' + fs_write_stream.path + '"', function(error, stdout, stderr) {
-						console.log('stdout: ' + stdout);
+						if(stderr){
+							console.error('stderr: ' + stderr);
+							return client.available();
+						}
+						var p = fs_write_stream.path;
+						p = p.substr(0, p.lastIndexOf('.')) + '.pdf';
+						
+						var s = fs.createReadStream(__dirname + '/output/' + p);
+						var writestream = gfs.createWriteStream({
+							_id: d._id,
+							content_type: 'application/pdf',
+							filename: p
+						});
+						s.pipe(writestream);
+						writestream.on('error', function() {
+							console.log('error while writing to mongoDB');
+							client.available();
+						});
+						writestream.on('close', function(file) {
+							console.log(file);
+							client.available();
+						});
 					});
 				});
-				client.available();
 			});
 			break;
 	}

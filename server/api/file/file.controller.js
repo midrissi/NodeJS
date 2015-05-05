@@ -20,17 +20,9 @@ exports.index = function(req, res) {
 
 // Get a single file
 exports.show = function(req, res) {
-	gfs.findOne({
-		_id: req.params.id
-	}, function(err, file) {
-		if (err) {
-			return handleError(res, err);
-		}
-		if (!file) {
-			return res.send(404);
-		}
-		return res.json(file);
-	});
+	gfs
+	.createReadStream({_id: req.params.id})
+	.pipe(res);
 };
 
 // Creates a new file in the DB.
@@ -55,8 +47,12 @@ exports.create = function(req, res) {
 			'application/pdf',
 			'application/vnd.openxmlformats-officedocument.presentationml.presentation',
 			'application/vnd.ms-powerpointtd',
-			'text/plain'
+			'text/plain',
+			'application/vnd.ms-powerpoint',
+			'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 		];
+
+		console.log(files.file.type);
 
 		if (types.indexOf(files.file.type) < 0) {
 			return res.status(400).json({
@@ -69,7 +65,7 @@ exports.create = function(req, res) {
 			content_type: f.type,
 			metadata: fields
 		});
-
+		console.log(f);
 		var s = fs.createReadStream(f.path);
 		s.pipe(writestream);
 		writestream.on('error', function() {
