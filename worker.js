@@ -4,10 +4,20 @@ var Q = require('q');
 var fs = require('fs');
 var config = require('./server/config/environment');
 var exec = require('child_process').exec;
+var input = '.input/';
+var output = '.output/';
 
 // The socket client
 var Client = require('./server/components/socket').Client;
 var client = new Client();
+
+// Create the temp folders if deos not exist
+Q.denodeify(fs.lstat)(input).catch(function () {
+	fs.mkdir(input);
+});
+Q.denodeify(fs.lstat)(output).catch(function () {
+	fs.mkdir(output);
+});
 
 // Connect to the mongodb server
 mongoose.connect(config.mongo.uri);
@@ -37,8 +47,12 @@ client.on('data', function(data) {
 					return client.available();
 				}
 
+				console.log('working...');
+
 				var readstream = gfs.createReadStream(d);
-				var fs_write_stream = fs.createWriteStream(file.filename);
+				var fname = file.filename;
+				fname = fname.substr(0, fname.lastIndexOf('.'))
+				var fs_write_stream = fs.createWriteStream('.input/' + file.filename);
 
 				readstream.pipe(fs_write_stream);
 				fs_write_stream.on('close', function() {
@@ -47,14 +61,12 @@ client.on('data', function(data) {
 							console.error('stderr: ' + stderr);
 							return client.available();
 						}
-						var p = fs_write_stream.path;
-						p = p.substr(0, p.lastIndexOf('.')) + '.pdf';
 						
-						var s = fs.createReadStream(__dirname + '/output/' + p);
+						var s = fs.createReadStream('.output/' + fname + '.pdf');
 						var writestream = gfs.createWriteStream({
 							_id: d._id,
 							content_type: 'application/pdf',
-							filename: p
+							filename: fname + '.pdf'
 						});
 						s.pipe(writestream);
 						writestream.on('error', function() {
@@ -62,7 +74,8 @@ client.on('data', function(data) {
 							client.available();
 						});
 						writestream.on('close', function(file) {
-							console.log(file);
+							fs.unlink('.output/' + fname + '.pdf');
+							console.log('done.');
 							client.available();
 						});
 					});

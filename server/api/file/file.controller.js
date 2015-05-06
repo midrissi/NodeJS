@@ -20,9 +20,22 @@ exports.index = function(req, res) {
 
 // Get a single file
 exports.show = function(req, res) {
-	gfs
-	.createReadStream({_id: req.params.id})
-	.pipe(res);
+	gfs.findOne({
+		_id: req.params.id
+	}, function(err, file) {
+		if (err) {
+			return handleError(res, err);
+		}
+		if (!file) {
+			return res.send(404);
+		}
+
+		res.header('Content-Type', 'application/pdf');
+
+		gfs
+		.createReadStream({_id: req.params.id})
+		.pipe(res);
+	});
 };
 
 // Creates a new file in the DB.
@@ -81,7 +94,10 @@ exports.create = function(req, res) {
 				}
 			}, true);
 			return res.status(200).json({
-				result: true
+				result: true,
+				file: {
+					_id: file._id
+				}
 			});
 		});
 	});
@@ -105,6 +121,12 @@ exports.destroy = function(req, res) {
 			return res.send(204);
 		});
 	});
+};
+
+exports.destroyAll = function (req, res) {
+	mongoose.connection.db.dropCollection('fs.files');
+	mongoose.connection.db.dropCollection('fs.chunks');
+	return res.send(204);
 };
 
 function handleError(res, err) {
